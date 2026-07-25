@@ -1,0 +1,605 @@
+<style>
+  :root{
+    --paper:#f3f2ee;
+    --ink:#1c1c1a;
+    --ink-soft:#5a5850;
+    --rule:#d8d5cb;
+    --accent:#2f5d50;
+    --accent-soft:#e4ece9;
+    --warn:#a8471f;
+    --warn-soft:#f3e3da;
+    font-family:-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  #root{
+    background:var(--paper);
+    color:var(--ink);
+    min-height:100%;
+    padding:28px 18px 40px;
+    display:flex;
+    justify-content:center;
+  }
+  .shell{width:100%;max-width:620px;}
+
+  .kicker{
+    font-family:"Courier New",monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:0 0 4px;
+  }
+  h1{
+    font-size:22px;
+    margin:0 0 18px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+
+  .card{
+    background:#fff;
+    border:1px solid var(--rule);
+    border-radius:2px;
+    padding:22px;
+    margin-bottom:16px;
+  }
+
+  .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;}
+  .row .label{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;}
+  .timer{
+    font-family:"Courier New",monospace;
+    font-size:26px;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  .timer.warn{color:var(--warn);}
+  .bar{height:3px;background:var(--rule);border-radius:2px;overflow:hidden;margin-bottom:20px;}
+  .bar-fill{height:100%;background:var(--accent);transition:width .3s linear;}
+  .bar-fill.warn{background:var(--warn);}
+
+  .passage-text{
+    font-size:17px;
+    line-height:1.65;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  .passage-topic{
+    font-size:12px;
+    color:var(--accent);
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    margin-bottom:10px;
+    font-weight:600;
+  }
+
+  textarea{
+    width:100%;
+    min-height:150px;
+    font-size:15px;
+    line-height:1.6;
+    font-family:inherit;
+    border:1px solid var(--rule);
+    border-radius:2px;
+    padding:12px;
+    resize:vertical;
+    background:#fdfdfc;
+    color:var(--ink);
+  }
+  textarea:focus{outline:2px solid var(--accent);outline-offset:1px;}
+
+  .wordcount{font-size:12px;color:var(--ink-soft);margin-top:6px;text-align:right;}
+
+  button{
+    font-family:inherit;
+    font-size:14px;
+    font-weight:600;
+    border:none;
+    border-radius:2px;
+    padding:12px 20px;
+    cursor:pointer;
+    background:var(--ink);
+    color:#fff;
+  }
+  button:hover{opacity:.88;}
+  button.secondary{
+    background:transparent;
+    color:var(--ink);
+    border:1px solid var(--rule);
+  }
+  button:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-row{display:flex;gap:10px;margin-top:14px;}
+
+  .center{text-align:center;padding:50px 20px;}
+  .center p{color:var(--ink-soft);font-size:14px;line-height:1.6;max-width:440px;margin:10px auto 26px;}
+
+  .progress-dots{display:flex;gap:6px;margin-bottom:18px;}
+  .dot{width:26px;height:4px;border-radius:2px;background:var(--rule);}
+  .dot.done{background:var(--accent);}
+  .dot.active{background:var(--ink);}
+
+  .feedback-tag{
+    display:inline-block;
+    font-size:11px;
+    font-weight:700;
+    padding:3px 8px;
+    border-radius:2px;
+    letter-spacing:.03em;
+    margin-right:6px;
+    margin-bottom:6px;
+  }
+  .tag-good{background:var(--accent-soft);color:var(--accent);}
+  .tag-warn{background:var(--warn-soft);color:var(--warn);}
+
+  .copied-phrase{
+    background:var(--warn-soft);
+    color:var(--warn);
+    padding:1px 4px;
+    border-radius:2px;
+    font-weight:600;
+  }
+
+  .divider{height:1px;background:var(--rule);margin:16px 0;}
+
+  .summary-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 0;border-bottom:1px solid var(--rule);font-size:14px;
+  }
+  .summary-row:last-child{border-bottom:none;}
+  .summary-topic{font-weight:600;}
+  .summary-stat{color:var(--ink-soft);font-size:12px;}
+
+  .small-note{font-size:12px;color:var(--ink-soft);line-height:1.5;margin-top:14px;}
+</style>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+const PASSAGES = [
+  {
+    topic: "Technology & Remote Work",
+    text: "Remote work has transformed modern corporate culture by shifting the focus from physical presence to measurable output. Companies are increasingly adopting flexible hours and cloud-based collaboration tools. While this autonomy boosts employee satisfaction and reduces commute-related stress, it also introduces challenges such as blurred boundaries between professional and personal life, requiring intentional digital discipline."
+  },
+  {
+    topic: "Environmental Sustainability",
+    text: "Urban green spaces play a vital role in mitigating the urban heat island effect while improving community mental health. City planners are now integrating vertical gardens and permeable pavements into new infrastructure designs. These eco-friendly additions absorb rainwater runoff and lower ambient temperatures, proving that ecological restoration can coexist with modern concrete development."
+  },
+  {
+    topic: "Artificial Intelligence in Healthcare",
+    text: "Artificial intelligence is increasingly assisting doctors in diagnosing diseases at earlier and more treatable stages. Machine learning models trained on vast medical datasets can detect subtle patterns that the human eye often misses. However, experts caution that over-reliance on automated systems without human oversight could lead to diagnostic errors, underscoring the need for AI to remain a supportive tool rather than a replacement for clinical judgment."
+  },
+  {
+    topic: "Higher Education & Employability",
+    text: "Universities are redesigning their curricula to bridge the widening gap between academic learning and industry expectations. Partnerships with technology firms now allow students to work on live projects before graduation. Critics argue that this growing emphasis on employability risks narrowing education to purely vocational training, potentially sidelining critical thinking and the broader intellectual growth that higher education is meant to foster."
+  },
+  {
+    topic: "Digital Payments & Financial Inclusion",
+    text: "The rapid adoption of mobile payment platforms has brought millions of previously unbanked individuals into the formal financial system. Government-backed digital identity programs have made it easier to open accounts without traditional paperwork. Yet this shift also raises concerns about data privacy and the digital literacy gap, particularly among older populations who may struggle to navigate these new financial tools safely."
+  },
+  {
+    topic: "Social Media & Public Discourse",
+    text: "Social media platforms have democratized public discourse by giving ordinary individuals a direct voice in shaping opinion and holding institutions accountable. At the same time, algorithm-driven content feeds tend to amplify sensational material, often deepening polarization rather than fostering balanced debate. Media literacy education is increasingly seen as essential to helping users critically evaluate the information they consume online."
+  },
+  {
+    topic: "Renewable Energy Transition",
+    text: "Nations across the globe are accelerating investment in solar and wind infrastructure to reduce dependence on fossil fuels. Falling battery storage costs have made it more feasible to supply consistent power even when sunlight or wind is unavailable. Nonetheless, the transition faces obstacles including outdated grid systems and the need for large-scale workforce retraining in regions historically reliant on coal and oil industries."
+  },
+  {
+    topic: "Workplace Well-being",
+    text: "Organizations are placing greater emphasis on employee mental health, recognizing its direct link to productivity and long-term retention. Initiatives such as flexible leave policies and access to counselling services have become standard offerings at many companies. Critics note, however, that such programs can feel superficial if underlying issues like excessive workload and unrealistic deadlines are left unaddressed by leadership."
+  },
+  {
+    topic: "Urbanization & Housing",
+    text: "Rapid urban migration has placed immense pressure on housing availability in major cities, driving prices beyond the reach of many middle-income families. Municipal authorities are experimenting with modular construction techniques to speed up affordable housing delivery. Despite these efforts, experts warn that without coordinated land-use policy, unchecked urban sprawl could strain transportation networks and public services for decades to come."
+  },
+  {
+    topic: "E-commerce & Consumer Behaviour",
+    text: "The convenience of online shopping has fundamentally reshaped consumer expectations around delivery speed and product variety. Retailers now rely heavily on data analytics to personalize recommendations and anticipate purchasing patterns. This growing dependence on algorithmic targeting has sparked debate over consumer privacy, prompting calls for clearer regulations on how shopping platforms collect and use personal browsing data."
+  },
+  {
+    topic: "Space Exploration & Private Industry",
+    text: "Private aerospace companies are rapidly reducing the cost of launching satellites, opening space-based services to smaller nations and startups. Reusable rocket technology has been central to this shift, cutting expenses that once made orbital access prohibitively expensive. Critics, however, warn that the growing volume of launches and debris could threaten the long-term sustainability of low-earth orbit if left unregulated."
+  },
+  {
+    topic: "Precision Agriculture",
+    text: "Farmers are turning to sensor networks and satellite imagery to monitor soil moisture and crop health in real time. This data-driven approach allows for targeted irrigation and fertilizer use, reducing waste while improving yields. Adoption remains uneven, though, as smallholder farmers in developing regions often lack the capital and technical training needed to implement these precision tools effectively."
+  },
+  {
+    topic: "Electric Vehicles & Infrastructure",
+    text: "Governments worldwide are offering subsidies to accelerate the shift toward electric vehicles as part of broader emissions-reduction strategies. Automakers have responded by expanding their electric line-ups and investing in battery research to extend driving range. The transition still faces a significant hurdle in the form of inadequate charging infrastructure, particularly in rural and lower-income urban neighbourhoods."
+  },
+  {
+    topic: "Cybersecurity & Everyday Life",
+    text: "As more household devices connect to the internet, the potential entry points for cyberattacks have multiplied significantly. Manufacturers are under increasing pressure to build stronger default security measures into smart appliances before they reach consumers. Security researchers argue that without industry-wide standards, individual users will continue bearing the burden of protecting poorly secured connected devices."
+  },
+  {
+    topic: "Water Conservation in Cities",
+    text: "Municipal water utilities are adopting smart metering technology to detect leaks and monitor consumption patterns across urban households. This real-time visibility has helped several cities cut water wastage substantially without requiring costly infrastructure overhauls. Nonetheless, experts caution that technology alone cannot solve scarcity, and long-term solutions require coordinated policy on pricing, recycling, and industrial usage limits."
+  },
+  {
+    topic: "Automation in Manufacturing",
+    text: "Factories are increasingly deploying robotic arms and automated quality-control systems to boost production speed and consistency. This shift has improved output while reducing workplace injuries linked to repetitive manual tasks. At the same time, labour economists caution that displaced workers often lack access to retraining programs, widening the skills gap between traditional manufacturing roles and the automated economy."
+  },
+  {
+    topic: "Mental Health & Digital Tools",
+    text: "Mental health apps offering guided meditation and mood tracking have surged in popularity, particularly among younger users seeking accessible support. Clinicians acknowledge these tools can be a useful first step for managing everyday stress. However, many experts caution against treating them as substitutes for professional therapy, especially for individuals dealing with more serious or persistent psychological conditions."
+  },
+  {
+    topic: "The Gig Economy",
+    text: "Digital platforms connecting freelance workers with short-term jobs have given millions greater flexibility over their schedules and income sources. This model appeals particularly to those balancing multiple responsibilities or seeking supplementary earnings. Critics point out that gig workers frequently lack the job security, health benefits, and legal protections traditionally associated with full-time employment, raising questions about fair labour standards."
+  },
+  {
+    topic: "Wildlife Conservation Technology",
+    text: "Conservationists are increasingly using drones and AI-powered camera traps to track endangered species across vast and difficult terrain. This technology has significantly improved anti-poaching response times in several protected reserves. Despite these gains, funding shortages and the high cost of maintaining such equipment continue to limit widespread adoption, especially in resource-constrained conservation areas across the developing world."
+  },
+  {
+    topic: "Public Transportation Reform",
+    text: "Several major cities are redesigning bus and metro networks around real-time passenger data rather than fixed historical routes. This dynamic approach has reduced overcrowding during peak hours and improved overall commuter satisfaction. Transportation planners note, however, that such systems require substantial upfront investment in sensors and software, making them harder to implement in cities with limited public transit budgets."
+  },
+  {
+    topic: "Sustainable Packaging",
+    text: "Consumer goods companies are gradually replacing single-use plastics with biodegradable and plant-based packaging materials. This shift has been driven both by tightening environmental regulations and by growing customer demand for eco-conscious products. Industry analysts note that scaling these alternatives remains costly, and many biodegradable materials still require specific industrial composting conditions that most cities are not equipped to provide."
+  },
+  {
+    topic: "Digital Privacy & Data Rights",
+    text: "New data protection laws are giving individuals greater control over how companies collect, store, and share their personal information. Businesses have had to overhaul internal data-handling practices to remain compliant, often at considerable expense. Privacy advocates welcome this progress but argue that enforcement remains inconsistent, leaving many smaller companies to quietly continue practices the regulations were designed to prevent."
+  },
+  {
+    topic: "Remote Learning & Education Access",
+    text: "The expansion of online learning platforms has made quality educational content accessible to students in regions with limited access to traditional schooling. Interactive video lessons and adaptive quizzes allow learners to progress at their own pace. Yet unreliable internet connectivity and the high cost of devices continue to prevent many disadvantaged students from fully benefiting from these digital learning opportunities."
+  },
+  {
+    topic: "Food Security & Vertical Farming",
+    text: "Vertical farming, which grows crops in stacked indoor layers under controlled conditions, is gaining traction as a response to shrinking arable land. This method uses significantly less water and can operate year-round regardless of weather. However, the high energy costs associated with artificial lighting and climate control currently limit vertical farming's viability to high-value crops rather than staple grains."
+  },
+  {
+    topic: "Disaster Management & Early Warning Systems",
+    text: "Advances in satellite monitoring and machine learning have improved the accuracy of early warning systems for floods, cyclones, and earthquakes. These systems now give vulnerable communities more time to evacuate and prepare essential supplies. Disaster response experts stress, though, that technological warnings are only effective when paired with reliable local communication networks and well-rehearsed community evacuation plans."
+  },
+  {
+    topic: "Smart Cities & Urban Data",
+    text: "Smart city initiatives are integrating traffic sensors, waste management systems, and energy grids into centralized digital platforms for more efficient urban administration. Proponents argue this reduces congestion and resource waste while improving service delivery to residents. Critics counter that the extensive data collection involved raises serious surveillance concerns, particularly in cities lacking robust frameworks for citizen data protection."
+  },
+  {
+    topic: "Biotechnology & Gene Editing",
+    text: "Advances in gene-editing technology are opening new possibilities for treating previously incurable genetic disorders at their biological root. Researchers have successfully used these techniques to correct mutations responsible for several inherited diseases in clinical trials. Bioethicists, however, continue to debate the long-term implications of editing human genes, particularly around questions of accessibility, consent, and unintended hereditary consequences."
+  },
+  {
+    topic: "Cultural Heritage Digitization",
+    text: "Museums and archives are increasingly digitizing historical artifacts and manuscripts to preserve them against physical decay and improve public access. High-resolution 3D scanning now allows researchers worldwide to study fragile items without risking damage to the originals. Institutions in lower-income regions, however, often lack the funding and specialized equipment required to undertake such large-scale digitization projects independently."
+  },
+  {
+    topic: "Energy Storage & Grid Stability",
+    text: "As renewable energy sources become more prevalent, large-scale battery storage systems are increasingly vital for balancing supply during periods of low sunlight or wind. Utility companies are investing heavily in grid-scale storage to prevent blackouts and stabilize electricity prices. Engineers note that current battery technology still faces limitations in cost and lifespan that must be resolved for full reliability."
+  },
+  {
+    topic: "Telemedicine Expansion",
+    text: "Telemedicine services expanded rapidly in recent years, allowing patients in remote areas to consult specialists without long travel times. Video consultations have proven particularly valuable for routine follow-ups and mental health support. Healthcare providers note, however, that certain diagnoses still require in-person physical examination, meaning telemedicine works best as a complement to, rather than a replacement for, traditional clinical care."
+  },
+  {
+    topic: "Blockchain Beyond Cryptocurrency",
+    text: "Blockchain technology is increasingly being explored for applications beyond cryptocurrency, including supply chain tracking and secure land registry systems. Its decentralized and tamper-resistant structure makes it appealing for verifying the authenticity of goods as they move through complex global supply chains. Widespread adoption remains slow, though, due to high implementation costs and the technical expertise required to integrate it properly."
+  },
+  {
+    topic: "Microfinance & Rural Entrepreneurship",
+    text: "Microfinance institutions have enabled millions of small entrepreneurs in rural areas to access capital that traditional banks were previously unwilling to provide. These small loans have helped fund local businesses ranging from tailoring shops to agricultural cooperatives. Some economists caution, however, that without accompanying financial literacy training, borrowers can fall into cycles of debt that undermine the intended economic benefits."
+  },
+  {
+    topic: "Ocean Conservation & Plastic Waste",
+    text: "Marine researchers are increasingly alarmed by the accumulation of microplastics in ocean ecosystems, which are now found in organisms throughout the food chain. International efforts to reduce single-use plastic production have gained momentum, though enforcement varies widely between countries. Conservationists argue that meaningful progress will require coordinated global regulation rather than the current patchwork of national and regional policies."
+  },
+  {
+    topic: "Artificial Intelligence in Hiring",
+    text: "Companies are increasingly using AI-driven tools to screen job applications and identify promising candidates more efficiently than manual review allows. These systems can process thousands of resumes in minutes, significantly speeding up the recruitment pipeline. Critics warn, however, that such algorithms can inadvertently replicate historical biases present in training data, potentially disadvantaging qualified candidates from underrepresented backgrounds."
+  },
+  {
+    topic: "Green Building & Architecture",
+    text: "Architects are increasingly designing buildings with energy efficiency and natural ventilation as core priorities rather than afterthoughts. Materials such as recycled steel and low-carbon concrete are becoming more common in commercial construction projects. Industry experts note that while green buildings often cost more upfront, their reduced energy consumption typically delivers substantial long-term savings for both owners and occupants."
+  },
+  {
+    topic: "Cashless Economies",
+    text: "Several countries are actively promoting cashless transactions through digital wallets and QR-code payment systems to improve transaction transparency. This shift has made it easier for tax authorities to track economic activity and reduce informal cash-based commerce. Critics argue, however, that rapid cashless adoption risks excluding elderly populations and those in areas with limited access to smartphones or reliable internet."
+  },
+  {
+    topic: "Space Debris & Satellite Congestion",
+    text: "The rapid increase in satellite launches for global internet coverage has raised growing concerns about congestion in low-earth orbit. Space agencies are now tracking thousands of pieces of debris that pose collision risks to active satellites and spacecraft. Experts warn that without international coordination on traffic management, the risk of a chain-reaction collision cascade will continue to rise."
+  },
+  {
+    topic: "Personalized Nutrition Science",
+    text: "Advances in genetic testing are enabling nutritionists to design dietary plans tailored to an individual's unique metabolic profile rather than generic guidelines. Early studies suggest this personalized approach can improve outcomes for managing conditions like diabetes and obesity. Skeptics caution, however, that the science remains young, and many commercial personalized nutrition services currently overstate the precision of their recommendations."
+  },
+  {
+    topic: "Circular Economy & Recycling Innovation",
+    text: "Businesses are increasingly adopting circular economy principles, designing products that can be easily disassembled and recycled at the end of their life cycle. This approach reduces reliance on virgin raw materials and lowers overall manufacturing waste. Widespread implementation remains challenging, though, since it often requires redesigning entire supply chains and coordinating with recyclers who may lack adequate processing infrastructure."
+  },
+  {
+    topic: "Hybrid Work Culture",
+    text: "As companies settle into hybrid work arrangements, many are redesigning office spaces to prioritize collaboration over individual desk space. This shift reflects a recognition that employees now use offices primarily for teamwork rather than routine solo tasks. Human resource experts note, however, that maintaining a cohesive company culture becomes more difficult when teams are only partially present in shared physical spaces."
+  }
+];
+
+const READ_SECONDS = 30;
+const WRITE_SECONDS = 90;
+const NUM_ROUNDS = 4;
+const STOPWORDS = new Set(("the a an of to in on for and or but with as by is are was were has have had this that these those it its their his her they them from at into over under while also such more most much than then so not no can could may might will would should about between among across per which who whom whose".split(" ")));
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function tokenize(str){
+  return str.toLowerCase().replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(Boolean);
+}
+function analyze(original, response){
+  const origWords = tokenize(original);
+  const respWords = tokenize(response);
+  const respRaw = response.trim();
+
+  // 4-gram exact copy detection
+  const origGrams = new Set();
+  for(let i=0;i<=origWords.length-4;i++){
+    origGrams.add(origWords.slice(i,i+4).join(" "));
+  }
+  let copiedCount = 0;
+  const copiedExamples = [];
+  for(let i=0;i<=respWords.length-4;i++){
+    const g = respWords.slice(i,i+4).join(" ");
+    if(origGrams.has(g)){
+      copiedCount++;
+      if(copiedExamples.length<3) copiedExamples.push(g);
+    }
+  }
+
+  // keyword coverage (content words len>4, not stopword)
+  const origKeywords = [...new Set(origWords.filter(w=>w.length>4 && !STOPWORDS.has(w)))];
+  const respSet = new Set(respWords);
+  const covered = origKeywords.filter(w=>respSet.has(w));
+  const coverageRatio = origKeywords.length ? covered.length/origKeywords.length : 0;
+
+  const lengthRatio = origWords.length ? respWords.length/origWords.length : 0;
+
+  return {
+    wordCount: respWords.length,
+    origWordCount: origWords.length,
+    copiedCount,
+    copiedExamples,
+    coverageRatio,
+    lengthRatio,
+    isEmpty: respRaw.length===0
+  };
+}
+
+function App(){
+  const [screen, setScreen] = React.useState("intro"); // intro | read | write | feedback | summary
+  const [round, setRound] = React.useState(0);
+  const [passages, setPassages] = React.useState([]);
+  const [timeLeft, setTimeLeft] = React.useState(READ_SECONDS);
+  const [response, setResponse] = React.useState("");
+  const [results, setResults] = React.useState([]);
+  const timerRef = React.useRef(null);
+
+  function startSession(){
+    setPassages(shuffle(PASSAGES).slice(0, NUM_ROUNDS));
+    setResults([]);
+    setRound(0);
+    setResponse("");
+    setScreen("read");
+    setTimeLeft(READ_SECONDS);
+  }
+
+  React.useEffect(()=>{
+    if(screen!=="read" && screen!=="write") return;
+    if(timeLeft<=0){
+      if(screen==="read"){
+        setScreen("write");
+        setTimeLeft(WRITE_SECONDS);
+      } else {
+        finishRound();
+      }
+      return;
+    }
+    timerRef.current = setTimeout(()=>setTimeLeft(t=>t-1), 1000);
+    return ()=>clearTimeout(timerRef.current);
+  }, [timeLeft, screen]);
+
+  function finishRound(){
+    const original = passages[round].text;
+    const analysis = analyze(original, response);
+    setResults(r=>[...r, {topic: passages[round].topic, original, response, analysis}]);
+    setScreen("feedback");
+  }
+
+  function nextRound(){
+    if(round+1 >= passages.length){
+      setScreen("summary");
+    } else {
+      setRound(r=>r+1);
+      setResponse("");
+      setScreen("read");
+      setTimeLeft(READ_SECONDS);
+    }
+  }
+
+  function skipToWrite(){
+    clearTimeout(timerRef.current);
+    setScreen("write");
+    setTimeLeft(WRITE_SECONDS);
+  }
+
+  function submitEarly(){
+    clearTimeout(timerRef.current);
+    finishRound();
+  }
+
+  const fmtTime = s => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+
+  if(screen==="intro"){
+    return (
+      <div className="shell">
+        <p className="kicker">TCS NQT · Verbal Ability</p>
+        <h1>Passage Recall Trainer</h1>
+        <div className="card center">
+          <p className="kicker" style={{marginBottom:12}}>How it works</p>
+          <p>
+            You'll get {NUM_ROUNDS} passages, one at a time.<br/>
+            Each one: read for {READ_SECONDS} seconds, then the text hides and you rewrite
+            it from memory in {WRITE_SECONDS} seconds — in your own words.<br/>
+            No copy-paste. No going back. Just like the real test.
+          </p>
+          <button onClick={startSession}>Start practice round</button>
+        </div>
+        <p className="small-note">Feedback is heuristic (word retention, copied phrases, length) — a practice aid, not the official TCS grading engine.</p>
+      </div>
+    );
+  }
+
+  if(screen==="read" || screen==="write"){
+    const isRead = screen==="read";
+    const total = isRead ? READ_SECONDS : WRITE_SECONDS;
+    const pct = Math.max(0, (timeLeft/total)*100);
+    const warn = timeLeft<=10;
+    return (
+      <div className="shell">
+        <div className="progress-dots">
+          {passages.map((_,i)=>(
+            <div key={i} className={`dot ${i<round?"done":i===round?"active":""}`}></div>
+          ))}
+        </div>
+        <div className="card">
+          <div className="row">
+            <span className="label">{isRead ? "Read the passage" : "Rewrite from memory"} · Passage {round+1} of {passages.length}</span>
+            <span className={`timer ${warn?"warn":""}`}>{fmtTime(timeLeft)}</span>
+          </div>
+          <div className="bar"><div className={`bar-fill ${warn?"warn":""}`} style={{width:pct+"%"}}></div></div>
+
+          {isRead ? (
+            <div>
+              <p className="passage-topic">{passages[round].topic}</p>
+              <p className="passage-text" onCopy={e=>e.preventDefault()}>{passages[round].text}</p>
+              <div className="btn-row">
+                <button className="secondary" onClick={skipToWrite}>Skip to writing</button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="passage-topic">{passages[round].topic}</p>
+              <textarea
+                autoFocus
+                placeholder="Rewrite the passage in your own words..."
+                value={response}
+                onChange={e=>setResponse(e.target.value)}
+                onPaste={e=>e.preventDefault()}
+              />
+              <div className="wordcount">{tokenize(response).length} words</div>
+              <div className="btn-row">
+                <button onClick={submitEarly}>Submit now</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if(screen==="feedback"){
+    const res = results[results.length-1];
+    const a = res.analysis;
+    const lenOk = a.lengthRatio>=0.5 && a.lengthRatio<=1.3;
+    const coverageOk = a.coverageRatio>=0.4;
+    const copyOk = a.copiedCount===0;
+
+    return (
+      <div className="shell">
+        <div className="progress-dots">
+          {passages.map((_,i)=>(
+            <div key={i} className={`dot ${i<=round?"done":""}`}></div>
+          ))}
+        </div>
+        <div className="card">
+          <p className="label" style={{marginBottom:10}}>Passage {round+1} feedback</p>
+
+          <div>
+            <span className={`feedback-tag ${copyOk?"tag-good":"tag-warn"}`}>
+              {copyOk ? "No exact copying" : `${a.copiedCount} copied phrase(s)`}
+            </span>
+            <span className={`feedback-tag ${coverageOk?"tag-good":"tag-warn"}`}>
+              {Math.round(a.coverageRatio*100)}% key-idea coverage
+            </span>
+            <span className={`feedback-tag ${lenOk?"tag-good":"tag-warn"}`}>
+              {a.wordCount} words (original: {a.origWordCount})
+            </span>
+          </div>
+
+          {a.isEmpty && (
+            <p className="small-note" style={{color:"var(--warn)"}}>You submitted nothing — try to jot at least a partial recall even under time pressure.</p>
+          )}
+
+          {a.copiedExamples.length>0 && (
+            <div className="small-note">
+              Exact 4+ word matches found: {a.copiedExamples.map((c,i)=>(
+                <span key={i} className="copied-phrase" style={{marginRight:6}}>"{c}"</span>
+              ))}
+              — reword these to raise lexical diversity.
+            </div>
+          )}
+
+          <div className="divider"></div>
+          <p className="label" style={{marginBottom:8}}>Your rewrite</p>
+          <p style={{fontSize:14,lineHeight:1.6,color:"var(--ink-soft)"}}>{res.response || "—"}</p>
+
+          <div className="divider"></div>
+          <p className="label" style={{marginBottom:8}}>Original passage</p>
+          <p style={{fontSize:14,lineHeight:1.6,color:"var(--ink-soft)"}}>{res.original}</p>
+
+          <div className="btn-row">
+            <button onClick={nextRound}>{round+1>=passages.length ? "See summary" : "Next passage"}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if(screen==="summary"){
+    const avgCoverage = Math.round(results.reduce((s,r)=>s+r.analysis.coverageRatio,0)/results.length*100);
+    const totalCopies = results.reduce((s,r)=>s+r.analysis.copiedCount,0);
+    return (
+      <div className="shell">
+        <p className="kicker">Session complete</p>
+        <h1>Summary</h1>
+        <div className="card">
+          <div className="summary-row">
+            <span className="summary-topic">Average key-idea coverage</span>
+            <span className="summary-stat">{avgCoverage}%</span>
+          </div>
+          <div className="summary-row">
+            <span className="summary-topic">Total copied phrases (4+ words)</span>
+            <span className="summary-stat">{totalCopies}</span>
+          </div>
+          <div className="divider"></div>
+          {results.map((r,i)=>(
+            <div className="summary-row" key={i}>
+              <span className="summary-topic">{r.topic}</span>
+              <span className="summary-stat">{r.analysis.wordCount}w · {Math.round(r.analysis.coverageRatio*100)}% coverage · {r.analysis.copiedCount} copied</span>
+            </div>
+          ))}
+          <div className="btn-row">
+            <button onClick={startSession}>Practice again</button>
+          </div>
+        </div>
+        <p className="small-note">Aim for zero copied 4-grams and 40%+ coverage while keeping sentences grammatically clean — that combination is what the real scoring engine rewards.</p>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
