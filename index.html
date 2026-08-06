@@ -129,6 +129,7 @@
   }
   .tag-good{background:var(--accent-soft);color:var(--accent);}
   .tag-warn{background:var(--warn-soft);color:var(--warn);}
+  .tag-tip{background:#eee9de;color:var(--ink-soft);}
 
   .copied-phrase{
     background:var(--warn-soft);
@@ -446,16 +447,16 @@ function App(){
         <p className="kicker">TCS NQT · Verbal Ability</p>
         <h1>Passage Recall Trainer</h1>
         <div className="card center">
-          <p className="kicker" style={{marginBottom:12}}>How it works</p>
+          <p className="kicker" style={{marginBottom:12}}>Instructions</p>
           <p>
-            You'll get {NUM_ROUNDS} passages, one at a time.<br/>
-            Each one: read for {READ_SECONDS} seconds, then the text hides and you rewrite
-            it from memory in {WRITE_SECONDS} seconds — in your own words.<br/>
-            No copy-paste. No going back. Just like the real test.
+            You will have {READ_SECONDS} seconds to read a paragraph. After {READ_SECONDS} seconds, the paragraph will disappear from the screen.<br/><br/>
+            Then, you will have {WRITE_SECONDS} seconds to reconstruct the paragraph. Show that you understood the passage by rewriting it in your own words.<br/><br/>
+            Your answer will be scored for clear and accurate content, not word-for-word memorization. After {WRITE_SECONDS} seconds, your work will be saved automatically.<br/><br/>
+            This session has {NUM_ROUNDS} passages, one at a time. No copy-paste, no going back — same as the real test.
           </p>
           <button onClick={startSession}>Start practice round</button>
         </div>
-        <p className="small-note">Feedback is heuristic (word retention, copied phrases, length) — a practice aid, not the official TCS grading engine.</p>
+        <p className="small-note">Feedback below is heuristic (word retention, copied phrases, length) — a practice aid, not the official TCS grading engine.</p>
       </div>
     );
   }
@@ -501,6 +502,7 @@ function App(){
               <div className="btn-row">
                 <button onClick={submitEarly}>Submit now</button>
               </div>
+              <p className="small-note">Your work saves automatically when the timer hits zero — no need to rush a click.</p>
             </div>
           )}
         </div>
@@ -526,14 +528,14 @@ function App(){
           <p className="label" style={{marginBottom:10}}>Passage {round+1} feedback</p>
 
           <div>
-            <span className={`feedback-tag ${copyOk?"tag-good":"tag-warn"}`}>
-              {copyOk ? "No exact copying" : `${a.copiedCount} copied phrase(s)`}
-            </span>
             <span className={`feedback-tag ${coverageOk?"tag-good":"tag-warn"}`}>
-              {Math.round(a.coverageRatio*100)}% key-idea coverage
+              {Math.round(a.coverageRatio*100)}% content accuracy
             </span>
             <span className={`feedback-tag ${lenOk?"tag-good":"tag-warn"}`}>
               {a.wordCount} words (original: {a.origWordCount})
+            </span>
+            <span className={`feedback-tag ${copyOk?"tag-good":"tag-tip"}`}>
+              {copyOk ? "Fully in your own words" : `Tip: ${a.copiedCount} phrase(s) close to original`}
             </span>
           </div>
 
@@ -543,10 +545,10 @@ function App(){
 
           {a.copiedExamples.length>0 && (
             <div className="small-note">
-              Exact 4+ word matches found: {a.copiedExamples.map((c,i)=>(
+              Close to original wording: {a.copiedExamples.map((c,i)=>(
                 <span key={i} className="copied-phrase" style={{marginRight:6}}>"{c}"</span>
               ))}
-              — reword these to raise lexical diversity.
+              — not a scoring penalty by itself, but rewording these shows stronger understanding.
             </div>
           )}
 
@@ -575,25 +577,25 @@ function App(){
         <h1>Summary</h1>
         <div className="card">
           <div className="summary-row">
-            <span className="summary-topic">Average key-idea coverage</span>
+            <span className="summary-topic">Average content accuracy</span>
             <span className="summary-stat">{avgCoverage}%</span>
           </div>
           <div className="summary-row">
-            <span className="summary-topic">Total copied phrases (4+ words)</span>
-            <span className="summary-stat">{totalCopies}</span>
+            <span className="summary-topic">Phrases close to original wording</span>
+            <span className="summary-stat">{totalCopies} (own-words tip, not a penalty)</span>
           </div>
           <div className="divider"></div>
           {results.map((r,i)=>(
             <div className="summary-row" key={i}>
               <span className="summary-topic">{r.topic}</span>
-              <span className="summary-stat">{r.analysis.wordCount}w · {Math.round(r.analysis.coverageRatio*100)}% coverage · {r.analysis.copiedCount} copied</span>
+              <span className="summary-stat">{r.analysis.wordCount}w · {Math.round(r.analysis.coverageRatio*100)}% accuracy · {r.analysis.copiedCount} close-matches</span>
             </div>
           ))}
           <div className="btn-row">
             <button onClick={startSession}>Practice again</button>
           </div>
         </div>
-        <p className="small-note">Aim for zero copied 4-grams and 40%+ coverage while keeping sentences grammatically clean — that combination is what the real scoring engine rewards.</p>
+        <p className="small-note">Real scoring focuses on clear, accurate content — not word-for-word memorization. Use content accuracy as your main signal; the close-match count is just a nudge toward more natural phrasing.</p>
       </div>
     );
   }
